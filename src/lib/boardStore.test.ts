@@ -93,8 +93,10 @@ describe('board manifest (R3-401)', () => {
 
   // R3-737 — the app is Lodestar now; the on-disk format is not renamed. This pins
   // the data-format decision: a NEW board still carries the `whiteboard:` frontmatter
-  // key, written by the real writer (readers in mdxObject.ts and site-main's
-  // flushPolicy key on it; a rename would be its own dual-read migration).
+  // key, written by the real writer. The literal-key readers are site-main's
+  // flushPolicy (`whiteboard: 'immediate'`), the on-disk corpus and the schema;
+  // mdxObject's frontmatter parser is namespace-flat and would read a renamed block
+  // identically — which is exactly why the pin lives here, at the writer.
   it('a new board manifest still carries the whiteboard: frontmatter key (R3-737 data-format pin)', async () => {
     await writeNewBoard(target, 'Format pin');
     const raw = String(files.get('/board/board.md'));
