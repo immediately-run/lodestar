@@ -4,9 +4,9 @@
 // their object directly. The Image control names its wait while the pick is
 // out (R3-607 / R-IX-2) and the menu carries the dialog contract.
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import { useOverlayDialog } from '../hooks/useOverlayDialog';
-import { BUSY_LABELS } from '../hooks/useWhiteboard';
+import { BUSY_LABELS } from '../hooks/useLodestar';
 import Icon from './Icon';
 import type { ObjectKind } from '../lib/types';
 

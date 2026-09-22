@@ -4,7 +4,7 @@
 // file to the existing edit-file task (spec §4.2). With nothing selected it edits
 // board-level settings (background, theme); with many, a bulk delete.
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 import { NOTE_COLORS } from '../data/seedBoard';
 import type { Background, WObject } from '../lib/types';

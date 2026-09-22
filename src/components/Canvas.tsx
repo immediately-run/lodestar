@@ -4,7 +4,7 @@
 // a one-viewport margin) are mounted — the store holds all geometry in memory,
 // only the DOM is virtualized (spec §3.1).
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Connections from './Connections';
 import ObjectFrame from './ObjectFrame';
 import SelectionOverlay from './SelectionOverlay';

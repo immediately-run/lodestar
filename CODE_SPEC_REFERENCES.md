@@ -1,7 +1,7 @@
-# CODE_SPEC_REFERENCES — whiteboard
+# CODE_SPEC_REFERENCES — Lodestar
 
 Durable index of **non-trivial** code↔spec mappings. Seeded by the 2026-06
-code-verification pass (R3-124; plan `08-system-apps.md`). Most whiteboard
+code-verification pass (R3-124; plan `08-system-apps.md`). Most Lodestar
 spec-refs are trivial inline `spec §N` comments (the bare `spec §N` convention =
 `WHITEBOARD_SPEC §N`, which lives in the whiteboard-app docs subdir, not the main
 `docs/specs/` checkout). This file records only the non-obvious mappings.
@@ -42,7 +42,7 @@ it looks fine in `vite dev` and only breaks on immediately.run.
 
 ## Recorded findings (code-verification pass, 2026-06)
 
-- **SDK-version skew (record only, do NOT bump):** whiteboard pins
+- **SDK-version skew (record only, do NOT bump):** Lodestar pins
   `@immediately-run/sdk` at **`0.8.1`** (others on `0.2.8`; file-explorer
   `0.11.0`; agent-demo `^0.12.0`). Fleet maintenance debt; coordinated bump is a
   separate gated change.

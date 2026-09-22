@@ -1,4 +1,4 @@
-// The demo board the whiteboard ships with — a hand-authored "Q3 planning"
+// The demo board Lodestar ships with — a hand-authored "Q3 planning"
 // board that exercises every object kind, connection variant, and degraded
 // state (invalid frontmatter, newer-schema read-only, a component that threw).
 //

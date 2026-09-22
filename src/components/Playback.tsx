@@ -4,7 +4,7 @@
 // handled in the controller). The camera easing + reduced-motion cut live in
 // `flyTo`.
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 
 const roundBtn = (disabled: boolean): React.CSSProperties => ({

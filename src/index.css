@@ -82,7 +82,7 @@ html[data-theme="light"] {
     radial-gradient(50% 40% at 12% 8%, rgba(212,69,154,.06), transparent 60%);
 }
 
-/* ---------------------------------------------------------------- whiteboard tokens
+/* ---------------------------------------------------------------- lodestar tokens
    Extra tokens the canvas app needs on top of the shared foundation: a fuller
    type scale, the canvas grid hairlines, and the sticky-note palette. The note
    palette is designed as named tokens (spec WHITEBOARD §3.4 / DESIGN_BRIEF §1)
@@ -128,7 +128,7 @@ html[data-theme="light"] {
 /* ---------------------------------------------------------------- reset + base */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-/* The whiteboard is a full-bleed stage: fill the iframe, never scroll the page —
+/* Lodestar is a full-bleed stage: fill the iframe, never scroll the page —
    pan/zoom happens on the canvas layer, not the document. */
 html, body, #root { height: 100%; }
 body {

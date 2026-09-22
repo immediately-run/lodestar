@@ -2,7 +2,7 @@
 // its kind at the camera centre; double-clicking empty canvas opens the same set
 // as a quick-create menu (spec §4.2).
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 import type { ObjectKind } from '../lib/types';
 

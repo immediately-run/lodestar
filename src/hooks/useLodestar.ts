@@ -1,4 +1,4 @@
-// The whiteboard's single source of truth: camera, objects, selection, and all
+// Lodestar's single source of truth: camera, objects, selection, and all
 // pointer/keyboard gesture logic. Ported from the design comp's controller into
 // one hook so the presentational components stay thin. Geometry gestures write
 // "once, on gesture end" (spec §5.1); here the write is an in-memory mutation +
@@ -158,7 +158,7 @@ export const BUSY_LABELS = {
   'open-board': 'Opening board…',
 } as const;
 
-export function useWhiteboard() {
+export function useLodestar() {
   // The canvas element arrives via a callback ref (a function, not a ref object
   // read during render) so the listener effect re-runs once it mounts.
   const [canvasEl, setCanvasEl] = useState<HTMLDivElement | null>(null);

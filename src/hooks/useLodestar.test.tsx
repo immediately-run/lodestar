@@ -32,14 +32,14 @@ vi.mock('../lib/boardStore', async (importOriginal) => ({
   removeView: vi.fn(async () => undefined),
 }));
 
-import { useWhiteboard } from './useWhiteboard';
+import { useLodestar } from './useLodestar';
 import { removeView } from '../lib/boardStore';
 
 // Held in an object (not a bare let): the react-hooks globals rule forbids
 // reassigning outside-declared variables inside a component.
-const held = { wb: null as ReturnType<typeof useWhiteboard> | null };
+const held = { wb: null as ReturnType<typeof useLodestar> | null };
 function Harness() {
-  const controller = useWhiteboard();
+  const controller = useLodestar();
   // Capture in an EFFECT (the react-hooks immutability rule bans outside
   // writes during render); act flushes effects, so tests read it after render.
   useEffect(() => {
@@ -67,7 +67,7 @@ describe('post-pick busy states (R3-607)', () => {
     await renderWithBoard();
     // The pure spelling both pointer and keyboard share; imported directly so a
     // toggle-branch regression cannot hide behind a render.
-    const { applySelection } = await import('./useWhiteboard');
+    const { applySelection } = await import('./useLodestar');
     expect(applySelection([], 'a', true)).toEqual(['a']);
     expect(applySelection(['a'], 'b', true)).toEqual(['a', 'b']);
     expect(applySelection(['a', 'b'], 'a', true)).toEqual(['b']); // toggle out

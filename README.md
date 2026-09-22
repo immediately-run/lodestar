@@ -1,6 +1,6 @@
-# Whiteboard
+# Lodestar
 
-An infinite-canvas collaborative whiteboard where **every canvas object is one
+An infinite-canvas collaborative board where **every canvas object is one
 MDX file** in a shared space — an [immediately.run](https://immediately.run) app.
 Sticky notes, prose, images, video, shapes, and live React components live on a
 zoomable/pannable stage; saved camera **views** chain into guided **journeys**
@@ -9,8 +9,8 @@ that are the headline experience for anyone who opens a read-only share link
 is a folder you can read, diff, and edit with any tool — including an agent that
 has never heard of this app.
 
-Specs live in the `immediately-run/docs` repo under `docs/whiteboard-app/`
-(`WHITEBOARD_SPEC.md` is the anchor); this repo is the app.
+Specs live in the `immediately-run/docs` repo (`WHITEBOARD_SPEC.md` is the
+anchor); this repo is the app.
 
 ## What's here today
 
@@ -36,7 +36,7 @@ every object kind and degraded state:
 
 ## Architecture
 
-- `src/hooks/useWhiteboard.ts` — the controller: camera, store, and all
+- `src/hooks/useLodestar.ts` — the controller: camera, store, and all
   pointer/keyboard gestures. The single seam where the persistence and change
   layers attach.
 - `src/lib/` — pure helpers: `camera.ts` (projection/zoom math), `geometry.ts`
@@ -62,7 +62,7 @@ names — no capability is added ahead of a spec change.
 
 ## Open a folder *as* a whiteboard project (`open-project`)
 
-The whiteboard **provides** the `open-project` task contract (SPACES_UI_SPEC §6,
+Lodestar **provides** the `open-project` task contract (SPACES_UI_SPEC §6,
 spaces-ui Phase 5). A folder declares that it is a whiteboard project with an
 in-directory marker — the `immediately.run` field of its `package.json`, or a
 small `immediately.run.json` at the folder root:
@@ -79,16 +79,16 @@ A file manager that finds that marker on a readable folder offers **"Open
 project."** Choosing it invokes the `open-project` contract, delegating the
 folder as a directory capability (`capDir`) — *narrowing a grant the file
 manager already holds, no new authority, no consent prompt* (R-SPACES-9/11). The
-host resolves the bound provider (the whiteboard by default, user-overridable),
+host resolves the bound provider (Lodestar by default, user-overridable),
 mounts the folder as a task-scoped chroot, and launches the app. On boot the
-whiteboard reads `useTaskInput()`, locates that mount, loads the board from it,
+app reads `useTaskInput()`, locates that mount, loads the board from it,
 and calls `completeTask({ opened: true })`. A normal launch (no task input) is
 unaffected — it opens the user's durable board space as before.
 
 A runnable demo project folder lives in `fixtures/sample-project/` (the marker
 plus a `board.md` and two object files). The provider logic is in
 `src/lib/openProject.ts`, wired into the controller's boot effect in
-`src/hooks/useWhiteboard.ts`.
+`src/hooks/useLodestar.ts`.
 
 ## Develop
 

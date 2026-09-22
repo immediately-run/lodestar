@@ -1,10 +1,10 @@
-// React context carrying the single `useWhiteboard` instance to every chrome and
+// React context carrying the single `useLodestar` instance to every chrome and
 // canvas component, so they read state and call actions without prop-drilling.
-// The provider is `<Whiteboard>`; consumers use the `useWb` hook.
+// The provider is `<Lodestar>`; consumers use the `useWb` hook.
 
 import { createContext } from 'react';
-import type { useWhiteboard } from '../hooks/useWhiteboard';
+import type { useLodestar } from '../hooks/useLodestar';
 
-export type WhiteboardApi = ReturnType<typeof useWhiteboard>;
+export type LodestarApi = ReturnType<typeof useLodestar>;
 
-export const WhiteboardContext = createContext<WhiteboardApi | null>(null);
+export const LodestarContext = createContext<LodestarApi | null>(null);

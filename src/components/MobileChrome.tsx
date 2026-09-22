@@ -3,7 +3,7 @@
 // (edit toggle, journeys, theme, share) and a horizontally-scrolling create bar
 // shown only while editing with the inspector closed.
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 import type { ObjectKind } from '../lib/types';
 

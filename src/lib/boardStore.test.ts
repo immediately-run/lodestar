@@ -91,6 +91,17 @@ describe('board manifest (R3-401)', () => {
     expect(String(raw)).not.toContain('size');
   });
 
+  // R3-737 — the app is Lodestar now; the on-disk format is not renamed. This pins
+  // the data-format decision: a NEW board still carries the `whiteboard:` frontmatter
+  // key, written by the real writer (readers in mdxObject.ts and site-main's
+  // flushPolicy key on it; a rename would be its own dual-read migration).
+  it('a new board manifest still carries the whiteboard: frontmatter key (R3-737 data-format pin)', async () => {
+    await writeNewBoard(target, 'Format pin');
+    const raw = String(files.get('/board/board.md'));
+    expect(raw).toContain('\nwhiteboard:\n  schema: 1\n');
+    expect(raw).not.toContain('lodestar:');
+  });
+
   it('loadManifest is resilient to a missing file', async () => {
     const m = await loadManifest(target);
     expect(m).toEqual({});

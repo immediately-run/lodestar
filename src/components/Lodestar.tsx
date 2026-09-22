@@ -2,8 +2,8 @@
 // lays out the canvas + every chrome surface. Each surface decides its own
 // visibility (mode, mobile, open/closed) so this stays a flat composition.
 
-import { useWhiteboard } from '../hooks/useWhiteboard';
-import { WhiteboardContext } from '../lib/context';
+import { useLodestar } from '../hooks/useLodestar';
+import { LodestarContext } from '../lib/context';
 import Canvas from './Canvas';
 import TopBar from './TopBar';
 import EditToolbar from './EditToolbar';
@@ -16,10 +16,10 @@ import DemoMenu from './DemoMenu';
 import MobileChrome from './MobileChrome';
 import StateScreens from './StateScreens';
 
-function Whiteboard() {
-  const wb = useWhiteboard();
+function Lodestar() {
+  const wb = useLodestar();
   return (
-    <WhiteboardContext.Provider value={wb}>
+    <LodestarContext.Provider value={wb}>
       <div style={{ position: 'absolute', inset: 0, background: 'var(--bg)', color: 'var(--ink)', font: '400 16px/1.5 var(--sans)', overflow: 'hidden', userSelect: 'none' }}>
         <Canvas />
         <TopBar />
@@ -33,8 +33,8 @@ function Whiteboard() {
         <MobileChrome />
         <StateScreens />
       </div>
-    </WhiteboardContext.Provider>
+    </LodestarContext.Provider>
   );
 }
 
-export default Whiteboard;
+export default Lodestar;

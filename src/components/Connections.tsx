@@ -4,7 +4,7 @@
 // are computed in screen space from the object store so off-screen / virtualized
 // objects still anchor correctly. Plus the live drag-to-connect preview.
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 
 function Connections() {
