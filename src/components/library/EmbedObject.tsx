@@ -4,7 +4,7 @@
 // what loading exposes (your IP + that you opened this board). This is the v1
 // mitigation for the one residual exfiltration channel.
 
-import { useWb } from '../../hooks/useWhiteboardCtx';
+import { useWb } from '../../hooks/useLodestarCtx';
 import Icon from '../Icon';
 import type { WObject } from '../../lib/types';
 

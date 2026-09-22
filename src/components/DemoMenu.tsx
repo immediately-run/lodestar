@@ -4,7 +4,7 @@
 // states the live platform layer (mounts, share-link redemption) will drive once
 // wired; it is a dev affordance, not host chrome.
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import { useOverlayDialog } from '../hooks/useOverlayDialog';
 import Icon from './Icon';
 import type { ScreenKind } from '../lib/types';

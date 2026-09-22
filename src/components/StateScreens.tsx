@@ -4,8 +4,8 @@
 // These never imitate host chrome — sign-in itself is host-driven (the copy says
 // so); this only frames the app-side states around it.
 
-import { useWb } from '../hooks/useWhiteboardCtx';
-import { BUSY_LABELS } from '../hooks/useWhiteboard';
+import { useWb } from '../hooks/useLodestarCtx';
+import { BUSY_LABELS } from '../hooks/useLodestar';
 import { useOverlayDialog } from '../hooks/useOverlayDialog';
 import BoardChooser from './BoardChooser';
 import Icon from './Icon';

@@ -2,10 +2,10 @@
 // Global CSS (design tokens, fonts, full-bleed base) is imported here, not in
 // main.tsx, because the runtime never loads main.tsx.
 import './index.css';
-import Whiteboard from './components/Whiteboard';
+import Lodestar from './components/Lodestar';
 
 function App() {
-  return <Whiteboard />;
+  return <Lodestar />;
 }
 
 export default App;

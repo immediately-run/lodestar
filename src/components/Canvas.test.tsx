@@ -15,25 +15,25 @@ vi.mock('@immediately-run/sdk/mounts', () => ({
   },
 }));
 
-import { useWhiteboard } from '../hooks/useWhiteboard';
-import { WhiteboardContext } from '../lib/context';
+import { useLodestar } from '../hooks/useLodestar';
+import { LodestarContext } from '../lib/context';
 import Canvas from './Canvas';
 
 // The harness keeps the REAL controller (the hook) and hands it to the tree —
 // assertions read objects/selection through it, never a mock. Held in an
 // object (not a bare let) so the react-hooks globals rule is satisfied.
-const held = { wb: null as ReturnType<typeof useWhiteboard> | null };
+const held = { wb: null as ReturnType<typeof useLodestar> | null };
 function Harness() {
-  const controller = useWhiteboard();
+  const controller = useLodestar();
   // Capture in an EFFECT (the react-hooks immutability rule bans outside
   // writes during render); act flushes effects, so tests read it after render.
   useEffect(() => {
     held.wb = controller;
   });
   return (
-    <WhiteboardContext.Provider value={controller}>
+    <LodestarContext.Provider value={controller}>
       <Canvas />
-    </WhiteboardContext.Provider>
+    </LodestarContext.Provider>
   );
 }
 

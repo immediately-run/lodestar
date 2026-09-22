@@ -5,7 +5,7 @@
 // inline confirm on the row, the same surface that creates them.
 
 import { useState } from 'react';
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 import { implausibleDuration } from '../lib/journey';
 

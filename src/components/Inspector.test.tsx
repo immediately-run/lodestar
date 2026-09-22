@@ -14,24 +14,24 @@ vi.mock('@immediately-run/sdk/mounts', () => ({
   },
 }));
 
-import { useWhiteboard } from '../hooks/useWhiteboard';
-import { WhiteboardContext } from '../lib/context';
+import { useLodestar } from '../hooks/useLodestar';
+import { LodestarContext } from '../lib/context';
 import Inspector from './Inspector';
 
 // Held in an object (not a bare let): the react-hooks globals rule forbids
 // reassigning outside-declared variables inside a component.
-const held = { wb: null as ReturnType<typeof useWhiteboard> | null };
+const held = { wb: null as ReturnType<typeof useLodestar> | null };
 function Harness() {
-  const controller = useWhiteboard();
+  const controller = useLodestar();
   // Capture in an EFFECT (the react-hooks immutability rule bans outside
   // writes during render); act flushes effects, so tests read it after render.
   useEffect(() => {
     held.wb = controller;
   });
   return (
-    <WhiteboardContext.Provider value={controller}>
+    <LodestarContext.Provider value={controller}>
       <Inspector />
-    </WhiteboardContext.Provider>
+    </LodestarContext.Provider>
   );
 }
 

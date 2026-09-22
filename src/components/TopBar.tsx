@@ -2,9 +2,9 @@
 // desktop, the minimal control cluster top-right — zoom, journeys, theme, the
 // run/edit posture toggle (edit only offered when the mount is writable), and
 // Share. The edit toggle and Share invoke host-mediated tasks; until those tasks
-// exist they surface as toasts (the whiteboard holds no sharing authority — §6.3).
+// exist they surface as toasts (Lodestar holds no sharing authority — §6.3).
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 
 function TopBar() {

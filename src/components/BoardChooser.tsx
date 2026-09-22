@@ -8,10 +8,10 @@
 // Hand-off).
 
 import { useEffect, useState } from 'react';
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import { useOverlayDialog } from '../hooks/useOverlayDialog';
 import { listSpacesAndBoards } from '../lib/boardList';
-import { BUSY_LABELS } from '../hooks/useWhiteboard';
+import { BUSY_LABELS } from '../hooks/useLodestar';
 import type { SpaceBoards } from '../lib/boardList';
 import Icon from './Icon';
 

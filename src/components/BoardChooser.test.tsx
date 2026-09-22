@@ -12,17 +12,17 @@ vi.mock('@immediately-run/sdk/mounts', () => ({
   },
 }));
 
-import { useWhiteboard } from '../hooks/useWhiteboard';
-import { WhiteboardContext } from '../lib/context';
+import { useLodestar } from '../hooks/useLodestar';
+import { LodestarContext } from '../lib/context';
 import StateScreens from './StateScreens';
 
 function Harness() {
-  const wb = useWhiteboard();
+  const wb = useLodestar();
   return (
-    <WhiteboardContext.Provider value={wb}>
+    <LodestarContext.Provider value={wb}>
       <button onClick={() => wb.setScreen('chooser')}>Open chooser</button>
       <StateScreens />
-    </WhiteboardContext.Provider>
+    </LodestarContext.Provider>
   );
 }
 

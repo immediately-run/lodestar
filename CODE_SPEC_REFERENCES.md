@@ -1,7 +1,7 @@
-# CODE_SPEC_REFERENCES — whiteboard
+# CODE_SPEC_REFERENCES — Lodestar
 
 Durable index of **non-trivial** code↔spec mappings. Seeded by the 2026-06
-code-verification pass (R3-124; plan `08-system-apps.md`). Most whiteboard
+code-verification pass (R3-124; plan `08-system-apps.md`). Most Lodestar
 spec-refs are trivial inline `spec §N` comments (the bare `spec §N` convention =
 `WHITEBOARD_SPEC §N`, which lives in the whiteboard-app docs subdir, not the main
 `docs/specs/` checkout). This file records only the non-obvious mappings.
@@ -42,16 +42,15 @@ it looks fine in `vite dev` and only breaks on immediately.run.
 
 ## Recorded findings (code-verification pass, 2026-06)
 
-- **SDK-version skew (record only, do NOT bump):** whiteboard pins
-  `@immediately-run/sdk` at **`0.8.1`** (others on `0.2.8`; file-explorer
-  `0.11.0`; agent-demo `^0.12.0`). Fleet maintenance debt; coordinated bump is a
-  separate gated change.
+- **SDK-version skew — RESOLVED (verified 2026-09-22, R3-737 review):** the 2026-06
+  entry recorded a pin of `0.8.1` while others sat lower; the pin has since moved
+  (now `^0.17.0`) and the skew class is fleet-maintenance debt tracked across the
+  example repos, not here. No action in this repo.
 - **Vocabulary:** no `kernel` / `primary application` / `trust tier` in `src/`;
   uses "stage app" correctly. `main.tsx` carries no app logic/CSS.
 - **`requireLatest: "optimistic"`** (the default) — appropriate; not a finding.
-- **BUILD RED on origin/main (pre-existing, SDK-skew) — `capDir` not exported.**
-  `src/lib/pickFile.ts:59` uses `capDir` from `@immediately-run/sdk`, which the
-  pinned `0.8.1` does not export → `npm run build` fails `TS2339` on a clean
-  origin/main checkout. **Not introduced by this pass** (record-only `.md` added;
-  `npm run lint` green). Same SDK-version-skew class as file-explorer's `chat`
-  import — resolves with a coordinated SDK bump (out of scope for verify/record).
+- **~~BUILD RED on origin/main (pre-existing, SDK-skew) — `capDir` not exported.~~**
+  **RESOLVED (verified 2026-09-22, R3-737 review):** the current pin
+  (`@immediately-run/sdk ^0.17.0`) exports `capDir` and `npm run build` is green
+  on this head — the recorded `TS2339` no longer reproduces; the entry is kept
+  struck as the resolution record rather than deleted (this file is a ledger).

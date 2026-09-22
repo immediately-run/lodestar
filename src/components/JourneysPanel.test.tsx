@@ -13,20 +13,20 @@ vi.mock('@immediately-run/sdk/mounts', () => ({
   },
 }));
 
-import { useWhiteboard } from '../hooks/useWhiteboard';
-import { WhiteboardContext } from '../lib/context';
+import { useLodestar } from '../hooks/useLodestar';
+import { LodestarContext } from '../lib/context';
 import JourneysPanel from './JourneysPanel';
 
-const held = { wb: null as ReturnType<typeof useWhiteboard> | null };
+const held = { wb: null as ReturnType<typeof useLodestar> | null };
 function Harness() {
-  const controller = useWhiteboard();
+  const controller = useLodestar();
   useEffect(() => {
     held.wb = controller;
   });
   return (
-    <WhiteboardContext.Provider value={controller}>
+    <LodestarContext.Provider value={controller}>
       <JourneysPanel />
-    </WhiteboardContext.Provider>
+    </LodestarContext.Provider>
   );
 }
 

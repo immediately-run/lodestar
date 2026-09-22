@@ -2,7 +2,7 @@
 // LWW/merge notice, and the role-downgrade notice (copy in the controller's demo
 // scenarios). Non-blocking; an optional action button (e.g. Undo, Keep mine).
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 
 function Toasts() {

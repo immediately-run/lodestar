@@ -3,7 +3,7 @@
 // the drag-rectangle marquee. Resize/rotate handles and anchors are desktop-only
 // — mobile edit is select/move/inspector (spec §4.4).
 
-import { useWb } from '../hooks/useWhiteboardCtx';
+import { useWb } from '../hooks/useLodestarCtx';
 import Icon from './Icon';
 import type { WObject } from '../lib/types';
 

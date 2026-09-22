@@ -1,5 +1,5 @@
 // Thin wrapper over the `pick-file` task (PICK_FILE_TASK_SPEC) — the platform's
-// general open/save dialog, which the whiteboard invokes for Open/New board and
+// general open/save dialog, which Lodestar invokes for Open/New board and
 // Insert image (spec §6.1, §4.2). The picker NAVIGATES authority; it never grants
 // it: we hand it directory roots WE already hold (a `capDir` of the board space),
 // and it returns a `(root, relPath)` PATH that we then touch under our OWN grant.
