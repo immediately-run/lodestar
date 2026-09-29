@@ -101,9 +101,12 @@ declare const __WB_DEV__: boolean | undefined;
 
 /**
  * Open the signed-in user's board space (the §8.6 zero-config path). Rejects
- * with a SpaceError (`.code` = `auth-required` | `cancelled` | `forbidden`)
- * when there is no session or the user declines — callers degrade to an
- * in-memory board instead of crashing (platform rule 9).
+ * with a typed SpaceError — the SDK's union documents the codes the host sends
+ * (`auth-required` when there is no session, `cancelled` on decline, `timeout`
+ * from the bounded mount wait since SDK 0.36.0) but is a cast, so treat any
+ * code as reachable: callers discriminate `auth-required` and report every
+ * other code as the platform failure it is (see classifyBoardTargetFailure),
+ * degrading to an in-memory board instead of crashing (platform rule 9).
  */
 export async function openBoardTarget(slot = 'default'): Promise<BoardTarget> {
   // Local `vite dev`: persist to disk via dev-fs at a fixed root, since the
@@ -122,6 +125,35 @@ export async function openBoardTarget(slot = 'default'): Promise<BoardTarget> {
 /** True once the space has a board materialised (an `objects/` dir). */
 export async function boardExists(t: BoardTarget): Promise<boolean> {
   return exists(join(t.root, OBJECTS));
+}
+
+export interface BoardTargetFailure {
+  /** The platform error's machine code (`'unknown'` when it carries none). */
+  code: string;
+  /** True only for `auth-required` — the one failure signing in fixes. */
+  auth: boolean;
+  /** Toast copy for the degrade-to-memory path. */
+  copy: string;
+}
+
+/**
+ * Classify an `openBoardTarget` rejection for the degrade-to-memory path, and
+ * log it WITH its code — a bare catch here hides the root cause of a signed-in
+ * user losing persistence. Only `auth-required` is a sign-in problem (R3: the
+ * catch must discriminate); any other code is a platform failure the user
+ * cannot fix by signing in, so the toast says what happened instead.
+ */
+export function classifyBoardTargetFailure(e: unknown): BoardTargetFailure {
+  const code = (e as { code?: string } | null)?.code ?? 'unknown';
+  console.warn(`[lodestar] openBoardTarget failed · ${code}`, e);
+  return {
+    code,
+    auth: code === 'auth-required',
+    copy:
+      code === 'auth-required'
+        ? 'Working in memory — sign in to save your board.'
+        : `Working in memory — couldn't open your board · ${code}`,
+  };
 }
 
 /** Read every object/view/journey file from the target into the document model,

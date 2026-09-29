@@ -34,6 +34,7 @@ import type {
 import { BOARD, SEED_JOURNEYS, SEED_VIEWS, seedObjects } from '../data/seedBoard';
 import {
   boardExists,
+  classifyBoardTargetFailure,
   copyIntoAssets,
   folderIsBoard,
   loadBoard,
@@ -1270,8 +1271,16 @@ export function useLodestar() {
           // Auto-open the signed-in user's board space. Declined / signed-out
           // rejects with a typed SpaceError — we degrade to the in-memory seed.
           target = await openBoardTarget();
-        } catch {
-          if (!cancelled) toast('Working in memory — sign in to save your board.', 'save', { iconColor: 'var(--ink-2)' });
+        } catch (e) {
+          // Only `auth-required` is a sign-in problem; anything else is logged
+          // with its code and reported as the platform failure it is.
+          const failure = classifyBoardTargetFailure(e);
+          if (!cancelled)
+            toast(
+              failure.copy,
+              failure.auth ? 'save' : 'alert',
+              failure.auth ? { iconColor: 'var(--ink-2)' } : { iconColor: '#caa24a' },
+            );
           return;
         }
         if (cancelled) return;
