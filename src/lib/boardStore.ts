@@ -101,9 +101,12 @@ declare const __WB_DEV__: boolean | undefined;
 
 /**
  * Open the signed-in user's board space (the §8.6 zero-config path). Rejects
- * with a SpaceError (`.code` = `auth-required` | `cancelled` | `forbidden`)
- * when there is no session or the user declines — callers degrade to an
- * in-memory board instead of crashing (platform rule 9).
+ * with a typed SpaceError — the SDK's union documents the codes the host sends
+ * (`auth-required` when there is no session, `cancelled` on decline, `timeout`
+ * from the bounded mount wait since SDK 0.36.0) but is a cast, so treat any
+ * code as reachable: callers discriminate `auth-required` and report every
+ * other code as the platform failure it is (see classifyBoardTargetFailure),
+ * degrading to an in-memory board instead of crashing (platform rule 9).
  */
 export async function openBoardTarget(slot = 'default'): Promise<BoardTarget> {
   // Local `vite dev`: persist to disk via dev-fs at a fixed root, since the

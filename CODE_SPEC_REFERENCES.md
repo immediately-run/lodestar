@@ -42,15 +42,19 @@ it looks fine in `vite dev` and only breaks on immediately.run.
 
 ## Recorded findings (code-verification pass, 2026-06)
 
-- **SDK-version skew — RESOLVED (verified 2026-09-22, R3-737 review):** the 2026-06
-  entry recorded a pin of `0.8.1` while others sat lower; the pin has since moved
-  (now `^0.17.0`) and the skew class is fleet-maintenance debt tracked across the
-  example repos, not here. No action in this repo.
+- **~~SDK-version skew~~ — RESOLVED (verified 2026-09-22, R3-737 review;
+  re-verified 2026-09-29, R3-832):** the 2026-06 entry recorded a pin of `0.8.1`
+  while others sat lower; the pin moved to `^0.17.0` and is now **exact
+  `0.74.1`** — the `^0.17.0` range floor-resolved to 0.17.0 in the sandbox and
+  its `waitForMount` TDZ bug broke board persistence on prod (R3-832), so the
+  "no action in this repo" verdict did not survive contact; the skew class is
+  otherwise fleet-maintenance debt tracked across the example repos, not here.
 - **Vocabulary:** no `kernel` / `primary application` / `trust tier` in `src/`;
   uses "stage app" correctly. `main.tsx` carries no app logic/CSS.
 - **`requireLatest: "optimistic"`** (the default) — appropriate; not a finding.
 - **~~BUILD RED on origin/main (pre-existing, SDK-skew) — `capDir` not exported.~~**
-  **RESOLVED (verified 2026-09-22, R3-737 review):** the current pin
-  (`@immediately-run/sdk ^0.17.0`) exports `capDir` and `npm run build` is green
-  on this head — the recorded `TS2339` no longer reproduces; the entry is kept
-  struck as the resolution record rather than deleted (this file is a ledger).
+  **RESOLVED (verified 2026-09-22, R3-737 review; re-verified 2026-09-29, R3-832):**
+  the pinned SDK (now exact `0.74.1`) exports `capDir` and `npm run build` is
+  green on this head — the recorded `TS2339` no longer reproduces; the entry is
+  kept struck as the resolution record rather than deleted (this file is a
+  ledger).
