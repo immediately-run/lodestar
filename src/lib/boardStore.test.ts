@@ -41,7 +41,7 @@ vi.mock('@immediately-run/sdk/mounts', () => ({
   }),
 }));
 
-import { loadBoard, loadManifest, writeNewBoard, saveView, removeView } from './boardStore';
+import { classifyBoardTargetFailure, loadBoard, loadManifest, writeNewBoard, saveView, removeView } from './boardStore';
 import type { BoardTarget } from './boardStore';
 
 const target: BoardTarget = { root: '/board', mode: 'rw' };
@@ -122,5 +122,43 @@ describe('views gain a destroy (R3-607, R-IX-5)', () => {
 
   it('removing a view that is already gone resolves — never a failure to field', async () => {
     await expect(removeView(target, 'never-saved')).resolves.not.toThrow();
+  });
+});
+
+describe('classifyBoardTargetFailure (R3-832)', () => {
+  it('auth-required keeps the sign-in copy and flags auth', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const err = Object.assign(new Error('signed out'), { code: 'auth-required' });
+    const f = classifyBoardTargetFailure(err);
+    expect(f).toEqual({
+      code: 'auth-required',
+      auth: true,
+      copy: 'Working in memory — sign in to save your board.',
+    });
+    expect(warn).toHaveBeenCalledWith('[lodestar] openBoardTarget failed · auth-required', err);
+    warn.mockRestore();
+  });
+
+  it('any other code is reported as the platform failure it is, not a sign-in problem', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (const code of ['cancelled', 'forbidden', 'timeout', 'unsupported-scheme']) {
+      const f = classifyBoardTargetFailure(Object.assign(new Error('x'), { code }));
+      expect(f.auth).toBe(false);
+      expect(f.copy).toBe(`Working in memory — couldn't open your board · ${code}`);
+    }
+    expect(warn).toHaveBeenCalledTimes(4);
+    warn.mockRestore();
+  });
+
+  it('an error with no code degrades to `unknown` — still logged, never the sign-in copy', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const f = classifyBoardTargetFailure(new Error('no host transport'));
+    expect(f).toEqual({
+      code: 'unknown',
+      auth: false,
+      copy: "Working in memory — couldn't open your board · unknown",
+    });
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 });

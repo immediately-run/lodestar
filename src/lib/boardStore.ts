@@ -124,6 +124,35 @@ export async function boardExists(t: BoardTarget): Promise<boolean> {
   return exists(join(t.root, OBJECTS));
 }
 
+export interface BoardTargetFailure {
+  /** The platform error's machine code (`'unknown'` when it carries none). */
+  code: string;
+  /** True only for `auth-required` — the one failure signing in fixes. */
+  auth: boolean;
+  /** Toast copy for the degrade-to-memory path. */
+  copy: string;
+}
+
+/**
+ * Classify an `openBoardTarget` rejection for the degrade-to-memory path, and
+ * log it WITH its code — a bare catch here hides the root cause of a signed-in
+ * user losing persistence. Only `auth-required` is a sign-in problem (R3: the
+ * catch must discriminate); any other code is a platform failure the user
+ * cannot fix by signing in, so the toast says what happened instead.
+ */
+export function classifyBoardTargetFailure(e: unknown): BoardTargetFailure {
+  const code = (e as { code?: string } | null)?.code ?? 'unknown';
+  console.warn(`[lodestar] openBoardTarget failed · ${code}`, e);
+  return {
+    code,
+    auth: code === 'auth-required',
+    copy:
+      code === 'auth-required'
+        ? 'Working in memory — sign in to save your board.'
+        : `Working in memory — couldn't open your board · ${code}`,
+  };
+}
+
 /** Read every object/view/journey file from the target into the document model,
  *  plus the `board.md` manifest (title/background/schema) when present. */
 export async function loadBoard(t: BoardTarget): Promise<Board> {
