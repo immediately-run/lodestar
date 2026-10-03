@@ -373,11 +373,35 @@ describe('URL-dispatched corpus board (R3-831)', () => {
     vi.mocked(openBoardTarget).mockRejectedValueOnce(new Error('durable space must not open'));
     render(<Harness />);
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 700)); // let the poll find the late mount
+      // The mount arrives ~150ms after boot; the poll's window is ample —
+      // derived from the named bound, not a private headroom over it.
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS));
     });
     expect(loadBoard).toHaveBeenCalledWith({ root: '/mnt/corpus', mode: 'ro', spaceId: CORPUS.id });
     expect(openBoardTarget).not.toHaveBeenCalled();
     expect(held.wb!.state.title).toBe('Sample project');
+  });
+
+  it('a corpus mount arriving AFTER unmount is never loaded — the poll\'s cancelled return, pinned', async () => {
+    // The poll's isCancelled early-return is the only guard on the corpus side:
+    // a mount arriving after the component unmounted would otherwise load a
+    // board into a gone app (probe-verified by review round 2: with the check
+    // deleted, this case is the one that fails).
+    setTimeout(() => {
+      mountsHeld.list = [CORPUS];
+    }, 6 * CORPUS_POLL_INTERVAL_MS); // after the unmount below, inside the window
+    vi.mocked(boardExists).mockResolvedValueOnce(true);
+    vi.mocked(loadBoard).mockResolvedValueOnce({ objects: [NOTE], views: [], journeys: [], title: 'Sample project' });
+    const { unmount } = render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 2 * CORPUS_POLL_INTERVAL_MS)); // mid-poll, before the arrival
+    });
+    unmount();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS + 300));
+    });
+    expect(loadBoard).not.toHaveBeenCalled();
+    expect(openBoardTarget).not.toHaveBeenCalled();
   });
 
   it('a throwing mounts read (no host, local vite dev) skips the corpus path and the durable path answers exactly', async () => {
