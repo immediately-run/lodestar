@@ -222,9 +222,12 @@ describe('post-pick busy states (R3-607)', () => {
 describe('URL-dispatched corpus board (R3-831)', () => {
   beforeEach(() => {
     // Call counts accumulate across the file's earlier cases (module-level
-    // mocks); clear them so "not called" means "not called in THIS case".
-    vi.mocked(loadBoard).mockClear();
-    vi.mocked(openBoardTarget).mockClear();
+    // mocks); mockReset drops the once-queue too, so an unconsumed queued
+    // rejection cannot leak one case forward, and restores the real-function
+    // baseline each of these mocks was built on.
+    vi.mocked(loadBoard).mockReset();
+    vi.mocked(openBoardTarget).mockReset();
+    vi.mocked(boardExists).mockReset();
   });
   const CORPUS: SandboxMount = {
     path: '/mnt/corpus',
@@ -271,9 +274,29 @@ describe('URL-dispatched corpus board (R3-831)', () => {
       await new Promise((r) => setTimeout(r, 0)); // let the boot chain settle
     });
     expect(loadBoard).toHaveBeenCalledWith({ root: '/mnt/corpus', mode: 'ro', spaceId: CORPUS.id });
+    // The durable space must never open — asserted, not queued: the mock's
+    // rejection above is swallowed by the durable path's own catch, so only
+    // this call-count assertion holds the named guarantee.
+    expect(openBoardTarget).not.toHaveBeenCalled();
     expect(held.wb!.state.title).toBe('Sample project');
     expect(held.wb!.state.objects).toHaveLength(1);
     expect(held.wb!.state.objects[0].id).toBe('note-welcome');
+  });
+
+  it('a corpus mount whose board fails to load reports and falls through to the durable path', async () => {
+    mountsHeld.list = [CORPUS];
+    vi.mocked(boardExists).mockResolvedValueOnce(true);
+    vi.mocked(loadBoard).mockRejectedValueOnce(Object.assign(new Error('EROFS'), { code: 'EROFS' }));
+    vi.mocked(openBoardTarget).mockRejectedValueOnce(Object.assign(new Error('auth-required'), { code: 'auth-required' }));
+    render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(loadBoard).toHaveBeenCalledTimes(1);
+    // The failed load fell through: the durable path opened (and here,
+    // signed-out, degraded to the in-memory seed — today's behavior).
+    expect(openBoardTarget).toHaveBeenCalledTimes(1);
+    expect(held.wb!.state.toasts.some((t) => t.text.includes('Couldn’t open project'))).toBe(true);
   });
 
   it('a corpus mount with no board files falls through to the durable path unchanged', async () => {

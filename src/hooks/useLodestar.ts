@@ -1292,7 +1292,7 @@ export function useLodestar() {
               delegated = true;
             }
           } catch (e) {
-            if (!cancelled) toast(`Couldn't open project${codeOf(e)}`, 'alert', { iconColor: '#caa24a' });
+            if (!cancelled) toast(`Couldn’t open project${codeOf(e)}`, 'alert', { iconColor: '#caa24a' });
           }
         }
       }
