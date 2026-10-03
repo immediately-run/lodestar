@@ -67,6 +67,40 @@ export function corpusMount(mounts: SandboxMount[]): SandboxMount | null {
   return mounts.find((m) => m.type === 'content') ?? null;
 }
 
+/** The corpus poll's named bound (R3-831): the SDK's mount mirror populates
+ *  from the host's mount-add re-announcement asynchronously relative to the
+ *  app's boot effect, so the corpus is read as a bounded poll, not a one-shot
+ *  (a one-shot intermittently missed it and booted the demo board, found live
+ *  on the venue, 2026-10-03). Named once, with the interval, so the tests'
+ *  settle waits derive from it instead of hard-coding a headroom over a
+ *  private literal. An ordinary launch pays at most this window before the
+ *  durable path opens — no signal distinguishes it from a dispatched boot
+ *  whose corpus has not been mirrored yet, so the window is the price of not
+ *  intermittently ignoring the URL's project. */
+export const CORPUS_POLL_TRIES = 20;
+export const CORPUS_POLL_INTERVAL_MS = 50;
+
+/**
+ * Read the corpus mount as a bounded poll (R3-831): the first read, then one
+ * read per interval until a `type: 'content'` mount appears or the bound
+ * runs out. `isCancelled` (the boot effect's cleanup contract) stops the poll
+ * early — an unmounted chain never reaches the durable path on its behalf.
+ * `read` is the mounts read (getMounts); it may throw under no host runtime,
+ * which the caller catches.
+ */
+export async function pollForCorpusMount(
+  read: () => SandboxMount[],
+  isCancelled: () => boolean,
+): Promise<SandboxMount | null> {
+  let mount = corpusMount(read());
+  for (let tries = 0; !mount && tries < CORPUS_POLL_TRIES; tries += 1) {
+    await new Promise((r) => setTimeout(r, CORPUS_POLL_INTERVAL_MS));
+    if (isCancelled()) return null;
+    mount = corpusMount(read());
+  }
+  return mount;
+}
+
 /**
  * Find the chroot the host mounted for the delegated directory. The host mints
  * the delegation mount AT the rewritten path the `dir` param carries, so the

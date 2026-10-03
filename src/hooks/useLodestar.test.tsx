@@ -3,9 +3,9 @@
 // the awaited pick resolves, cleared after; a rejecting pick lands in the toast
 // channel. `pickFile` is the boundary — mocked controllable here; everything
 // else is the real controller.
-import { act, render } from '@testing-library/react';
+import { act, cleanup, render } from '@testing-library/react';
 import { useEffect } from 'react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { SandboxMount } from '@immediately-run/sdk/mounts';
 
 // Per-case mounts (R3-831): the default is no mounts at all — an ordinary
@@ -53,7 +53,7 @@ vi.mock('../lib/boardStore', async (importOriginal) => {
 
 import { useLodestar } from './useLodestar';
 import { boardExists, loadBoard, openBoardTarget, removeView } from '../lib/boardStore';
-import { corpusMount } from '../lib/openProject';
+import { CORPUS_POLL_INTERVAL_MS, CORPUS_POLL_TRIES, corpusMount } from '../lib/openProject';
 import type { WObject } from '../lib/types';
 
 // Held in an object (not a bare let): the react-hooks globals rule forbids
@@ -86,6 +86,11 @@ beforeEach(() => {
   mountsHeld.list = [];
   mountsHeld.throws = false;
 });
+// No vitest globals → no RTL auto-cleanup: without this, each case's Harness
+// stays mounted with a live boot chain (the R3-831 poll keeps one pending for
+// up to a second), and a leaked chain's durable-path calls land in the NEXT
+// case's assertions.
+afterEach(cleanup);
 
 describe('post-pick busy states (R3-607)', () => {
   beforeEach(() => {
@@ -312,10 +317,27 @@ describe('URL-dispatched corpus board (R3-831)', () => {
     vi.mocked(openBoardTarget).mockRejectedValueOnce(Object.assign(new Error('auth-required'), { code: 'auth-required' }));
     render(<Harness />);
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
+      // No corpus: the bounded poll pays its full window before the durable path.
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS + 300));
     });
     expect(loadBoard).not.toHaveBeenCalled();
     expect(openBoardTarget).toHaveBeenCalledTimes(1);
+  });
+
+  it('an unmounted chain stops before the durable path — the cancelled guard, no leaked board-space open', async () => {
+    // No corpus: the poll is pending mid-flight when the component unmounts (a
+    // mid-boot navigation). Without the cancelled guard the durable path would
+    // still open the user's board space from a gone app.
+    const { unmount } = render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 2 * CORPUS_POLL_INTERVAL_MS)); // mid-poll
+    });
+    unmount();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS + 300));
+    });
+    expect(loadBoard).not.toHaveBeenCalled();
+    expect(openBoardTarget).not.toHaveBeenCalled();
   });
 
   it('with no corpus mount and no task input, the durable path answers exactly as before', async () => {
@@ -323,12 +345,63 @@ describe('URL-dispatched corpus board (R3-831)', () => {
     vi.mocked(openBoardTarget).mockRejectedValueOnce(Object.assign(new Error('auth-required'), { code: 'auth-required' }));
     render(<Harness />);
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
+      // No corpus: the bounded poll pays its full window before the durable path.
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS + 300));
     });
     expect(loadBoard).not.toHaveBeenCalled();
     expect(openBoardTarget).toHaveBeenCalledTimes(1);
     // Signed out: the in-memory seed stays — the demo board, today's behavior.
     expect(held.wb!.state.objects.length).toBeGreaterThan(0);
+  });
+
+  it('a corpus mount that arrives late (the mount mirror\'s async replay) is still found — the intermittent race, pinned', async () => {
+    // The SDK's mount mirror populates from the host's mount-add re-announcement,
+    // asynchronously relative to the boot effect: a one-shot read intermittently
+    // missed the corpus and booted the demo board instead (found live on the
+    // venue, 2026-10-03). The mount appears ~150ms after boot here — after the
+    // first read, inside the bounded poll.
+    setTimeout(() => {
+      mountsHeld.list = [CORPUS];
+    }, 150);
+    vi.mocked(boardExists).mockResolvedValueOnce(true);
+    vi.mocked(loadBoard).mockResolvedValueOnce({
+      objects: [NOTE],
+      views: [],
+      journeys: [],
+      title: 'Sample project',
+    });
+    vi.mocked(openBoardTarget).mockRejectedValueOnce(new Error('durable space must not open'));
+    render(<Harness />);
+    await act(async () => {
+      // The mount arrives ~150ms after boot; the poll's window is ample —
+      // derived from the named bound, not a private headroom over it.
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS));
+    });
+    expect(loadBoard).toHaveBeenCalledWith({ root: '/mnt/corpus', mode: 'ro', spaceId: CORPUS.id });
+    expect(openBoardTarget).not.toHaveBeenCalled();
+    expect(held.wb!.state.title).toBe('Sample project');
+  });
+
+  it('a corpus mount arriving AFTER unmount is never loaded — the poll\'s cancelled return, pinned', async () => {
+    // The poll's isCancelled early-return is the only guard on the corpus side:
+    // a mount arriving after the component unmounted would otherwise load a
+    // board into a gone app (probe-verified by review round 2: with the check
+    // deleted, this case is the one that fails).
+    setTimeout(() => {
+      mountsHeld.list = [CORPUS];
+    }, 6 * CORPUS_POLL_INTERVAL_MS); // after the unmount below, inside the window
+    vi.mocked(boardExists).mockResolvedValueOnce(true);
+    vi.mocked(loadBoard).mockResolvedValueOnce({ objects: [NOTE], views: [], journeys: [], title: 'Sample project' });
+    const { unmount } = render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 2 * CORPUS_POLL_INTERVAL_MS)); // mid-poll, before the arrival
+    });
+    unmount();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS + 300));
+    });
+    expect(loadBoard).not.toHaveBeenCalled();
+    expect(openBoardTarget).not.toHaveBeenCalled();
   });
 
   it('a throwing mounts read (no host, local vite dev) skips the corpus path and the durable path answers exactly', async () => {

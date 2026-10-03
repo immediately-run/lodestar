@@ -57,8 +57,8 @@ import { getMounts, onMountsChange } from '@immediately-run/sdk/mounts';
 import type { SandboxMount } from '@immediately-run/sdk/mounts';
 import {
   abortOpenProject,
-  corpusMount,
   dirCapToBoardTarget,
+  pollForCorpusMount,
   readOpenProjectInput,
   reportOpened,
   resolveDelegatedMount,
@@ -1269,17 +1269,23 @@ export function useLodestar() {
       // ── URL-dispatch path (R3-831, REPO_CONTENT_DISPATCH_SPEC §3) ─────────
       // A cold URL load into a repo whose marker names `open-project`
       // dispatches to us as the bound viewer with NO task input: the host
-      // mounts the loaded repo as our corpus, marked `type: 'content'` and
-      // available at boot. That mount IS the project the URL opened — load
-      // the board from it BEFORE the durable path, so a dispatched project
-      // shows its own board, not the demo seed. Chrooted as mounted (ro as
-      // dispatched): saving follows whatever the corpus grant allows, like
-      // any board target. A corpus with no board files, or a failed load,
-      // falls through to the durable path unchanged.
+      // mounts the loaded repo as our corpus, marked `type: 'content'`. That
+      // mount IS the project the URL opened — load the board from it BEFORE
+      // the durable path, so a dispatched project shows its own board, not
+      // the demo seed. Chrooted as mounted (ro as dispatched): saving follows
+      // whatever the corpus grant allows, like any board target. A corpus
+      // with no board files, or a failed load, falls through to the durable
+      // path unchanged.
+      //
+      // The read is a bounded poll (`pollForCorpusMount`, the sibling of the
+      // delegated mount's poll above): the SDK's mount mirror populates from
+      // the host's mount-add re-announcement asynchronously relative to this
+      // effect, and a one-shot read intermittently missed the corpus and
+      // booted the demo board instead (found live on the venue, 2026-10-03).
       if (!delegated) {
         let corpus: SandboxMount | null = null;
         try {
-          corpus = corpusMount(getMounts());
+          corpus = await pollForCorpusMount(getMounts, () => cancelled);
         } catch {
           // No host runtime (local vite dev): no corpus; the durable path answers.
         }
@@ -1296,6 +1302,10 @@ export function useLodestar() {
           }
         }
       }
+      // A cancelled chain (the component unmounted mid-poll, or a corpus load
+      // settled after unmount) stops here: the durable path below would open
+      // the user's board space and toast into an unmounted canvas.
+      if (cancelled) return;
 
       if (!delegated) {
         let target: BoardTarget;
