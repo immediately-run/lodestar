@@ -9,11 +9,16 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { SandboxMount } from '@immediately-run/sdk/mounts';
 
 // Per-case mounts (R3-831): the default is no mounts at all — an ordinary
-// launch; the corpus cases push a `type: 'content'` mount in. Held in an
-// object for the react-hooks globals rule (see `held` below).
-const mountsHeld = { list: [] as SandboxMount[] };
+// launch; the corpus cases push a `type: 'content'` mount in, and the no-host
+// case makes the read itself throw (the SDK's transport mount service throws
+// 'no host transport' under local vite dev — the branch the corpus read guards).
+// Held in an object for the react-hooks globals rule (see `held` below).
+const mountsHeld = { list: [] as SandboxMount[], throws: false };
 vi.mock('@immediately-run/sdk/mounts', () => ({
-  getMounts: () => mountsHeld.list,
+  getMounts: () => {
+    if (mountsHeld.throws) throw new Error('no host transport');
+    return mountsHeld.list;
+  },
   onMountsChange: () => () => {},
   openSettings: async () => {
     throw new Error('no host transport');
@@ -75,9 +80,11 @@ async function renderWithBoard() {
 }
 
 // Every case starts with no mounts (R3-831): a leftover corpus mount from a
-// previous case would reroute the next case's boot into the corpus path.
+// previous case would reroute the next case's boot into the corpus path, and a
+// leftover throw would break every read after the no-host case.
 beforeEach(() => {
   mountsHeld.list = [];
+  mountsHeld.throws = false;
 });
 
 describe('post-pick busy states (R3-607)', () => {
@@ -321,6 +328,21 @@ describe('URL-dispatched corpus board (R3-831)', () => {
     expect(loadBoard).not.toHaveBeenCalled();
     expect(openBoardTarget).toHaveBeenCalledTimes(1);
     // Signed out: the in-memory seed stays — the demo board, today's behavior.
+    expect(held.wb!.state.objects.length).toBeGreaterThan(0);
+  });
+
+  it('a throwing mounts read (no host, local vite dev) skips the corpus path and the durable path answers exactly', async () => {
+    mountsHeld.throws = true;
+    vi.mocked(openBoardTarget).mockRejectedValueOnce(Object.assign(new Error('auth-required'), { code: 'auth-required' }));
+    render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    // The corpus read's catch is the branch that keeps every local no-host boot
+    // on the durable path: no corpus toast, no loadBoard, the durable answer.
+    expect(loadBoard).not.toHaveBeenCalled();
+    expect(openBoardTarget).toHaveBeenCalledTimes(1);
+    expect(held.wb!.state.toasts.some((t) => t.text.includes('Couldn’t open project'))).toBe(false);
     expect(held.wb!.state.objects.length).toBeGreaterThan(0);
   });
 });
