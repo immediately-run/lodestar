@@ -57,6 +57,7 @@ import { getMounts, onMountsChange } from '@immediately-run/sdk/mounts';
 import type { SandboxMount } from '@immediately-run/sdk/mounts';
 import {
   abortOpenProject,
+  corpusMount,
   dirCapToBoardTarget,
   readOpenProjectInput,
   reportOpened,
@@ -1263,6 +1264,37 @@ export function useLodestar() {
         // board space. On failure, fall through to the in-memory seed so the
         // canvas still renders something rather than a blank app.
         delegated = opened;
+      }
+
+      // ── URL-dispatch path (R3-831, REPO_CONTENT_DISPATCH_SPEC §3) ─────────
+      // A cold URL load into a repo whose marker names `open-project`
+      // dispatches to us as the bound viewer with NO task input: the host
+      // mounts the loaded repo as our corpus, marked `type: 'content'` and
+      // available at boot. That mount IS the project the URL opened — load
+      // the board from it BEFORE the durable path, so a dispatched project
+      // shows its own board, not the demo seed. Chrooted as mounted (ro as
+      // dispatched): saving follows whatever the corpus grant allows, like
+      // any board target. A corpus with no board files, or a failed load,
+      // falls through to the durable path unchanged.
+      if (!delegated) {
+        let corpus: SandboxMount | null = null;
+        try {
+          corpus = corpusMount(getMounts());
+        } catch {
+          // No host runtime (local vite dev): no corpus; the durable path answers.
+        }
+        if (corpus) {
+          const target = dirCapToBoardTarget(corpus);
+          try {
+            if (await boardExists(target)) {
+              await loadBoardInto(target);
+              if (!cancelled) toast('Project opened.', 'check');
+              delegated = true;
+            }
+          } catch (e) {
+            if (!cancelled) toast(`Couldn’t open project${codeOf(e)}`, 'alert', { iconColor: '#caa24a' });
+          }
+        }
       }
 
       if (!delegated) {
