@@ -6,9 +6,14 @@
 import { act, render } from '@testing-library/react';
 import { useEffect } from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { SandboxMount } from '@immediately-run/sdk/mounts';
 
+// Per-case mounts (R3-831): the default is no mounts at all — an ordinary
+// launch; the corpus cases push a `type: 'content'` mount in. Held in an
+// object for the react-hooks globals rule (see `held` below).
+const mountsHeld = { list: [] as SandboxMount[] };
 vi.mock('@immediately-run/sdk/mounts', () => ({
-  getMounts: () => [],
+  getMounts: () => mountsHeld.list,
   onMountsChange: () => () => {},
   openSettings: async () => {
     throw new Error('no host transport');
@@ -27,13 +32,24 @@ vi.mock('../lib/pickFile', () => ({
 
 // removeView is the one boardStore function deleteView's new branches ride —
 // controllable here, real everywhere else (partial mock over the original).
-vi.mock('../lib/boardStore', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../lib/boardStore')>()),
-  removeView: vi.fn(async () => undefined),
-}));
+// boardExists/loadBoard/openBoardTarget are controllable the same way for the
+// R3-831 corpus cases: the default is the REAL function, so every other case
+// behaves exactly as before.
+vi.mock('../lib/boardStore', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('../lib/boardStore')>();
+  return {
+    ...orig,
+    removeView: vi.fn(async () => undefined),
+    boardExists: vi.fn(orig.boardExists),
+    loadBoard: vi.fn(orig.loadBoard),
+    openBoardTarget: vi.fn(orig.openBoardTarget),
+  };
+});
 
 import { useLodestar } from './useLodestar';
-import { removeView } from '../lib/boardStore';
+import { boardExists, loadBoard, openBoardTarget, removeView } from '../lib/boardStore';
+import { corpusMount } from '../lib/openProject';
+import type { WObject } from '../lib/types';
 
 // Held in an object (not a bare let): the react-hooks globals rule forbids
 // reassigning outside-declared variables inside a component.
@@ -57,6 +73,12 @@ async function renderWithBoard() {
     await wb.openBoardAt({ root: '/mem/board', mode: 'rw' });
   });
 }
+
+// Every case starts with no mounts (R3-831): a leftover corpus mount from a
+// previous case would reroute the next case's boot into the corpus path.
+beforeEach(() => {
+  mountsHeld.list = [];
+});
 
 describe('post-pick busy states (R3-607)', () => {
   beforeEach(() => {
@@ -189,5 +211,93 @@ describe('post-pick busy states (R3-607)', () => {
     });
     expect(held.wb!.state.views.some((v) => v.name === name)).toBe(true);
     expect(held.wb!.state.toasts.some((t) => t.text.includes('remove view'))).toBe(true);
+  });
+});
+
+// ── URL-dispatched corpus board (R3-831) ─────────────────────────────────────
+// A cold URL load into a repo whose marker names open-project dispatches to us
+// as the bound viewer with NO task input; the host marks the loaded repo as a
+// `type: 'content'` mount available at boot. That mount is the project — the
+// board loads from it, and the durable path never opens.
+describe('URL-dispatched corpus board (R3-831)', () => {
+  beforeEach(() => {
+    // Call counts accumulate across the file's earlier cases (module-level
+    // mocks); clear them so "not called" means "not called in THIS case".
+    vi.mocked(loadBoard).mockClear();
+    vi.mocked(openBoardTarget).mockClear();
+  });
+  const CORPUS: SandboxMount = {
+    path: '/mnt/corpus',
+    type: 'content',
+    id: 'content:immediately-run/lodestar-sample-project',
+    mode: 'ro',
+  };
+  const NOTE: WObject = {
+    id: 'note-welcome',
+    kind: 'note',
+    x: 0,
+    y: 0,
+    w: 200,
+    h: 148,
+    rot: 0,
+    scale: 1,
+    z: 3,
+    connections: [],
+    title: 'Welcome',
+  };
+
+  it('corpusMount keys on the host mark (`type: content`), never on the only foreign mount', () => {
+    expect(corpusMount([])).toBeNull();
+    // A held space is foreign too — keying on "the only foreign mount" would
+    // open the wrong board the moment a space is held.
+    expect(corpusMount([{ path: '/spaces/x', type: 'firestore', id: 'space-1', mode: 'rw' }])).toBeNull();
+    expect(corpusMount([CORPUS])).toBe(CORPUS);
+  });
+
+  it('with no task input, a corpus mount IS the project — the board loads from it, chrooted as mounted', async () => {
+    mountsHeld.list = [CORPUS];
+    vi.mocked(boardExists).mockResolvedValueOnce(true);
+    vi.mocked(loadBoard).mockResolvedValueOnce({
+      objects: [NOTE],
+      views: [],
+      journeys: [],
+      title: 'Sample project',
+    });
+    // The durable space must never open: the URL named THIS project, so its
+    // own board — not the user's space, not the demo seed — is what shows.
+    vi.mocked(openBoardTarget).mockRejectedValueOnce(new Error('durable space must not open'));
+    render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0)); // let the boot chain settle
+    });
+    expect(loadBoard).toHaveBeenCalledWith({ root: '/mnt/corpus', mode: 'ro', spaceId: CORPUS.id });
+    expect(held.wb!.state.title).toBe('Sample project');
+    expect(held.wb!.state.objects).toHaveLength(1);
+    expect(held.wb!.state.objects[0].id).toBe('note-welcome');
+  });
+
+  it('a corpus mount with no board files falls through to the durable path unchanged', async () => {
+    mountsHeld.list = [CORPUS];
+    vi.mocked(boardExists).mockResolvedValueOnce(false);
+    vi.mocked(openBoardTarget).mockRejectedValueOnce(Object.assign(new Error('auth-required'), { code: 'auth-required' }));
+    render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(loadBoard).not.toHaveBeenCalled();
+    expect(openBoardTarget).toHaveBeenCalledTimes(1);
+  });
+
+  it('with no corpus mount and no task input, the durable path answers exactly as before', async () => {
+    mountsHeld.list = [];
+    vi.mocked(openBoardTarget).mockRejectedValueOnce(Object.assign(new Error('auth-required'), { code: 'auth-required' }));
+    render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(loadBoard).not.toHaveBeenCalled();
+    expect(openBoardTarget).toHaveBeenCalledTimes(1);
+    // Signed out: the in-memory seed stays — the demo board, today's behavior.
+    expect(held.wb!.state.objects.length).toBeGreaterThan(0);
   });
 });

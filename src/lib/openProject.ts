@@ -53,6 +53,21 @@ export async function readOpenProjectInput(): Promise<string | null> {
 }
 
 /**
+ * The dispatched corpus mount (R3-831, REPO_CONTENT_DISPATCH_SPEC §3): with no
+ * task input, the host mounts the repo a URL load dispatched to us as our
+ * corpus and MARKS it `type: 'content'` — the loaded repo IS the project the
+ * URL opened (its marker named `open-project`; the host resolved us as the
+ * bound viewer). Returns that mount, or null on an ordinary launch (no corpus,
+ * or no host runtime yet — the caller guards the read). Keyed on the host's
+ * mark, never on "the only foreign mount": the user's own spaces are foreign
+ * to us too, and that guess would open the wrong board the moment a space is
+ * held.
+ */
+export function corpusMount(mounts: SandboxMount[]): SandboxMount | null {
+  return mounts.find((m) => m.type === 'content') ?? null;
+}
+
+/**
  * Find the chroot the host mounted for the delegated directory. The host mints
  * the delegation mount AT the rewritten path the `dir` param carries, so the
  * mount whose `path` equals `dirPath` IS our board root — an exact match, no id
