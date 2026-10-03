@@ -53,7 +53,7 @@ vi.mock('../lib/boardStore', async (importOriginal) => {
 
 import { useLodestar } from './useLodestar';
 import { boardExists, loadBoard, openBoardTarget, removeView } from '../lib/boardStore';
-import { corpusMount } from '../lib/openProject';
+import { CORPUS_POLL_INTERVAL_MS, CORPUS_POLL_TRIES, corpusMount } from '../lib/openProject';
 import type { WObject } from '../lib/types';
 
 // Held in an object (not a bare let): the react-hooks globals rule forbids
@@ -318,10 +318,26 @@ describe('URL-dispatched corpus board (R3-831)', () => {
     render(<Harness />);
     await act(async () => {
       // No corpus: the bounded poll pays its full window before the durable path.
-      await new Promise((r) => setTimeout(r, 1300));
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS + 300));
     });
     expect(loadBoard).not.toHaveBeenCalled();
     expect(openBoardTarget).toHaveBeenCalledTimes(1);
+  });
+
+  it('an unmounted chain stops before the durable path — the cancelled guard, no leaked board-space open', async () => {
+    // No corpus: the poll is pending mid-flight when the component unmounts (a
+    // mid-boot navigation). Without the cancelled guard the durable path would
+    // still open the user's board space from a gone app.
+    const { unmount } = render(<Harness />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 2 * CORPUS_POLL_INTERVAL_MS)); // mid-poll
+    });
+    unmount();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS + 300));
+    });
+    expect(loadBoard).not.toHaveBeenCalled();
+    expect(openBoardTarget).not.toHaveBeenCalled();
   });
 
   it('with no corpus mount and no task input, the durable path answers exactly as before', async () => {
@@ -330,7 +346,7 @@ describe('URL-dispatched corpus board (R3-831)', () => {
     render(<Harness />);
     await act(async () => {
       // No corpus: the bounded poll pays its full window before the durable path.
-      await new Promise((r) => setTimeout(r, 1300));
+      await new Promise((r) => setTimeout(r, CORPUS_POLL_TRIES * CORPUS_POLL_INTERVAL_MS + 300));
     });
     expect(loadBoard).not.toHaveBeenCalled();
     expect(openBoardTarget).toHaveBeenCalledTimes(1);

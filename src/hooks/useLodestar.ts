@@ -57,8 +57,8 @@ import { getMounts, onMountsChange } from '@immediately-run/sdk/mounts';
 import type { SandboxMount } from '@immediately-run/sdk/mounts';
 import {
   abortOpenProject,
-  corpusMount,
   dirCapToBoardTarget,
+  pollForCorpusMount,
   readOpenProjectInput,
   reportOpened,
   resolveDelegatedMount,
@@ -1277,23 +1277,15 @@ export function useLodestar() {
       // with no board files, or a failed load, falls through to the durable
       // path unchanged.
       //
-      // The read is a bounded poll, not a one-shot: the SDK's mount mirror
-      // populates from the host's mount-add re-announcement (the
-      // request-mounts replay), asynchronously relative to this effect, and a
-      // one-shot read intermittently missed the corpus and booted the demo
-      // board instead (found live on the venue, 2026-10-03). The poll breaks
-      // the moment a content mount appears, like the delegated mount's poll
-      // above; an ordinary launch pays at most the bounded window, invisible
-      // on a canvas that already renders the seed.
+      // The read is a bounded poll (`pollForCorpusMount`, the sibling of the
+      // delegated mount's poll above): the SDK's mount mirror populates from
+      // the host's mount-add re-announcement asynchronously relative to this
+      // effect, and a one-shot read intermittently missed the corpus and
+      // booted the demo board instead (found live on the venue, 2026-10-03).
       if (!delegated) {
         let corpus: SandboxMount | null = null;
         try {
-          corpus = corpusMount(getMounts());
-          for (let tries = 0; !corpus && tries < 20; tries += 1) {
-            await new Promise((r) => setTimeout(r, 50));
-            if (cancelled) break;
-            corpus = corpusMount(getMounts());
-          }
+          corpus = await pollForCorpusMount(getMounts, () => cancelled);
         } catch {
           // No host runtime (local vite dev): no corpus; the durable path answers.
         }
